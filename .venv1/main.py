@@ -10,7 +10,7 @@ class SnakeGameClass:
         self.points = [] # list of points on snake
         self.distances = [] # list of distances between each point
         self.curr_len = 0 # total length of snake rn
-        self.allowed_len = 150 # total allowed len before eating food
+        self.allowed_len = 1000 # total allowed len before eating food
         self.prev_head = 0, 0 # previous head point
     
     def update(self, img_main, curr_head):
@@ -21,11 +21,19 @@ class SnakeGameClass:
         self.distances.append(dist)
         self.curr_len += dist
         self.prev_head = curr_head
-    
-        for i, point in enumerate(self.points): # draw snake
-            if i > 0:
-                cv2.line(img_main, self.points[i-1],self.points[i], color=(0, 0, 255), thickness=20)
-        cv2.circle(img_main, self.points[-1], radius=20, color=(0,200,200),thickness=cv2.FILLED)
+        
+        if self.curr_len > self.allowed_len:
+            for i, length in enumerate(self.distances):
+                self.curr_len -= length
+                self.distances.pop(i)
+                self.points.pop(i)
+                if self.curr_len < self.allowed_len: 
+                    break
+        if self.points:
+            for i, point in enumerate(self.points): # draw snake
+                if i > 0:
+                    cv2.line(img_main, self.points[i-1],self.points[i], color=(0, 0, 255), thickness=20)
+            cv2.circle(img_main, self.points[-1], radius=20, color=(0,200,200),thickness=cv2.FILLED)
         
         return img_main
     
@@ -48,6 +56,5 @@ while True:
     
     cv2.imshow("camera", img)
     # cv2.waitKey(1) # wait one millisecond
-    # if cv2.waitKey(1) == 27:
     if (cv2.waitKey(1) & 0xFF == ord('q')) or cv2.waitKey(1) == 27:
         break
