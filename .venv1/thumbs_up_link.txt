@@ -1,0 +1,5 @@
+Idea: Use thumbs up to start
+
+https://developers.google.com/mediapipe/solutions/vision/gesture_recognizer
+
+
