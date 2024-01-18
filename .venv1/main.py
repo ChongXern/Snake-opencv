@@ -2,8 +2,10 @@ import cvzone
 import cv2
 import numpy as np
 
+import time
 import math
 from random import randint
+from mediapipe.tasks.python import vision
 # from cvzone.FaceDetectionModule import FaceDetector
 from cvzone.HandTrackingModule import HandDetector
 
@@ -15,6 +17,8 @@ class SnakeGameClass:
         self.allowed_len = 100 # total allowed len before eating food
         self.prev_head = 0, 0 # previous head point
         self.score = 0
+        self.gameOver = False
+        
         
         self.food_image = cv2.imread(food_path, cv2.IMREAD_UNCHANGED)
         self.food_height, self.food_width, _ = self.food_image.shape
@@ -29,6 +33,10 @@ class SnakeGameClass:
         #print(pos)
     
     def update(self, img_main, curr_head):
+        if self.gameOver:
+            cv2.putText(img_main, "GAME OVER", (640,360), cv2.FONT_HERSHEY_SIMPLEX, 3.0, (0,0,255),10,cv2.LINE_AA)
+            time.sleep(3)
+            self.gameOver = False
         x_prev, y_prev = self.prev_head
         x_curr, y_curr = curr_head
         self.points.append([x_curr, y_curr])
@@ -54,9 +62,7 @@ class SnakeGameClass:
             self.random_food_positions()
             self.allowed_len += 30
             self.score += 1
-        
-        if curr_head in self.points[0:-1]:
-            print("Collision")
+            print("SCORE:", self.score)
         
         if self.points:
             for i, point in enumerate(self.points): # draw snake
@@ -64,36 +70,25 @@ class SnakeGameClass:
                     cv2.line(img_main, self.points[i-1],self.points[i], color=(0, 0, 255), thickness=20)
             cv2.circle(img_main, self.points[-1], radius=20, color=(0,200,200),thickness=cv2.FILLED)
         
+        pts = np.array(self.points[:-2], np.int32)
+        pts = pts.reshape((-1,1,2))
+        cv2.polylines(img_main, [pts], True, (0,200,0), 3)
+        min_dist = cv2.pointPolygonTest(pts, curr_head,True)
+        #print(abs(min_dist))
+        if (abs(min_dist) <= 1): 
+            self.points = [] # list of points on snake
+            self.distances = [] # list of distances between each point
+            self.curr_len = 0 # total length of snake rn
+            self.allowed_len = 100 # total allowed len before eating food
+            self.prev_head = 0, 0 # previous head point
+            self.score = 0
+            self.random_food_positions()
+            self.gameOver = True
         
+        '''if curr_head in self.points[0:-1]:
+            print("Collision")
+            self.gameOver = True'''
         
-        '''hf, wf, cf = img_main.shape
-        hb, wb, cb = self.food_image.shape
-
-        x1, y1 = max(rx, 0), max(ry, 0)
-        x2, y2 = min(rx + wf, wb), min(ry + hf, hb)
-
-        # For -ve pos, change the starting pos in the overlay image
-        x1_overlay = 0 if rx >= 0 else -rx
-        y1_overlay = 0 if ry >= 0 else -ry
-
-        # Calculate dim of slice to overlay
-        wf, hf = x2 - x1, y2 - y1
-
-        # If overlay is completely outside background, return original background
-        if wf <= 0 or hf <= 0:
-            return img_main
-
-        # Extract the alpha channel from the foreground and create the inverse mask
-        alpha = self.food_image[y1_overlay:y1_overlay + hf, x1_overlay:x1_overlay + wf, 3] / 255.0
-        inv_alpha = 1.0 - alpha
-
-        # Extract the RGB channels from the foreground
-        imgRGB = self.food_image[y1_overlay:y1_overlay + hf, x1_overlay:x1_overlay + wf, 0:3]
-
-        # Alpha blend the foreground and background
-        for c in range(0, 3):
-            img_main[y1:y2, x1:x2, c] = img_main[y1:y2, x1:x2, c] * inv_alpha + imgRGB[:, :, c] * alpha'''
-
         return img_main
     
     
@@ -108,8 +103,9 @@ while True:
     success, img = cap.read()
     img = cv2.flip(img, 1)
     hands, img = detector.findHands(img,flipType=False)
-        
+    
     if hands:
+        cv2.putText(img, str(game.score), (50,50), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255,255,255),3,cv2.LINE_AA)
         landmark_list = hands[0]['lmList']
         index_finger = landmark_list[8][0:2]
         img = game.update(img, index_finger)
