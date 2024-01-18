@@ -1,4 +1,4 @@
-#!/Users/chongxern/Desktop/Snake-game-opencv/.venv1/bin/python
+#!/Users/chongxern/Desktop/Snake-game-opencv/.venv1/bin/python3.11
 # -*- coding: utf-8 -*-
 import re
 import sys
